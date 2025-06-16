@@ -1,92 +1,89 @@
 package com.todo.get;
 
-
 import com.todo.BaseTest;
 import com.todo.annotations.DataPreparationExtension;
-import com.todo.annotations.PrepareTodo;
+import com.todo.annotations.DeterminedEnvExtension;
+
+import com.todo.requests.ValidatedTodoRequest;
+import com.todo.specs.request.RequestSpec;
 import io.qameta.allure.*;
 import io.qameta.allure.restassured.AllureRestAssured;
-import io.restassured.http.ContentType;
-import io.restassured.response.Response;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
+
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.todo.models.Todo;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
 
 @Epic("TODO Management")
-@Feature("Get Todos API")
+@Feature("Search Todos API")
+@ExtendWith(DeterminedEnvExtension.class)
 @ExtendWith(DataPreparationExtension.class)
 public class GetTodosTests extends BaseTest {
 
-    @BeforeEach
-    public void setupEach() {
-        deleteAllTodos();
-    }
-
+    @Tag("functional")
     @Test
     @Description("Получение пустого списка TODO, когда база данных пуста")
     public void testGetTodosWhenDatabaseIsEmpty() {
-        given()
-                .filter(new AllureRestAssured())
-                .when()
-                .get("/todos")
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.JSON)
-                .body("", hasSize(0));
+        ValidatedTodoRequest unauthRequest = new ValidatedTodoRequest((RequestSpec.unauthSpec()));
+        List<Todo> todos = unauthRequest.readAll();
+        assertTrue(todos.isEmpty());
+
     }
 
+    @Tag("functional")
     @Test
     @Description("Получение списка TODO с существующими записями")
     public void testGetTodosWithExistingEntries() {
         // Предварительно создать несколько TODO
         Todo todo1 = new Todo(1, "Task 1", false);
         Todo todo2 = new Todo(2, "Task 2", true);
+        ValidatedTodoRequest unauthRequest = new ValidatedTodoRequest((RequestSpec.unauthSpec()));
 
-        createTodo(todo1);
-        createTodo(todo2);
-
-        Response response =
-                given()
-                        .filter(new AllureRestAssured())
-                        .when()
-                        .get("/todos")
-                        .then()
-                        .statusCode(200)
-                        .contentType("application/json")
-                        .body("", hasSize(2))
-                        .extract().response();
+        unauthRequest.create(todo1);
+        unauthRequest.create(todo2);
+        List<Todo> todos = unauthRequest.readAll();
 
         // Дополнительная проверка содержимого
-        Todo[] todos = response.getBody().as(Todo[].class);
+        assertEquals(2, todos.size());
 
-        Assertions.assertEquals(1, todos[0].getId());
-        Assertions.assertEquals("Task 1", todos[0].getText());
-        Assertions.assertFalse(todos[0].isCompleted());
+        assertEquals(1, todos.get(0).getId());
+        assertEquals("Task 1", todos.get(0).getText());
+        assertFalse(todos.get(0).isCompleted());
 
-        Assertions.assertEquals(2, todos[1].getId());
-        Assertions.assertEquals("Task 2", todos[1].getText());
-        Assertions.assertTrue(todos[1].isCompleted());
+        assertEquals(2, todos.get(1).getId());
+        assertEquals("Task 2", todos.get(1).getText());
+        assertTrue(todos.get(1).isCompleted());
     }
 
+    @Tag("functional")
     @Test
-    @PrepareTodo(5)
     @Description("Использование параметров offset и limit для пагинации")
     public void testGetTodosWithOffsetAndLimit() {
 
-        // Проверяем, что получили задачи с id 3 и 4
-        List<Todo> todos = todoRequester.getValidatedRequest().readAll(2,2);
+        ValidatedTodoRequest unauthRequest = new ValidatedTodoRequest(RequestSpec.unauthSpec());
+        // Создаем 5 TODO
+        for (int i = 1; i <= 5; i++) {
+            unauthRequest.create(new Todo(i, "Task " + i, i % 2 == 0));
+        }
 
-        Assertions.assertEquals(todos.size(), 2);
+        List<Todo> todos = unauthRequest.readAll(2, 2);
+
+        assertEquals(2, todos.size());
+
+        // Проверяем, что получили задачи с id 3 и 4
+        assertEquals(3, todos.get(0).getId());
+        assertEquals("Task 3", todos.get(0).getText());
+
+        assertEquals(4, todos.get(1).getId());
+        assertEquals("Task 4", todos.get(1).getText());
     }
 
+    @Tag("request schema")
     @Test
     @DisplayName("Передача некорректных значений в offset и limit")
     public void testGetTodosWithInvalidOffsetAndLimit() {
@@ -127,28 +124,19 @@ public class GetTodosTests extends BaseTest {
                 .body(containsString("Invalid query string"));
     }
 
+    @Tag("functional")
     @Test
     @DisplayName("Проверка ответа при превышении максимально допустимого значения limit")
     public void testGetTodosWithExcessiveLimit() {
+
+        ValidatedTodoRequest unauthRequest = new ValidatedTodoRequest((RequestSpec.unauthSpec()));
         // Создаем 10 TODO
         for (int i = 1; i <= 10; i++) {
-            createTodo(new Todo(i, "Task " + i, i % 2 == 0));
+            unauthRequest.create(new Todo(i, "Task " + i, i % 2 == 0));
         }
-
-        Response response =
-                given()
-                        .filter(new AllureRestAssured())
-                        .queryParam("limit", 1000)
-                        .when()
-                        .get("/todos")
-                        .then()
-                        .statusCode(200)
-                        .contentType("application/json")
-                        .extract().response();
-
-        Todo[] todos = response.getBody().as(Todo[].class);
+        List<Todo> todos = unauthRequest.readAll(0, 1000);
 
         // Проверяем, что вернулось 10 задач
-        Assertions.assertEquals(10, todos.length);
+        assertEquals(10, todos.size());
     }
 }

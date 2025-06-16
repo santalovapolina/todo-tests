@@ -9,7 +9,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 public class DataPreparationExtension implements BeforeEachCallback {
     @Override
-    public void beforeEach(ExtensionContext extensionContext) throws Exception {
+    public void beforeEach(ExtensionContext extensionContext) {
         var testMethod = extensionContext.getRequiredTestMethod();
 
         var prepareTodo = testMethod.getAnnotation(PrepareTodo.class);

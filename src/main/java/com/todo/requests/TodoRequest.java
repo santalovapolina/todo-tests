@@ -32,7 +32,7 @@ public class TodoRequest extends Request implements CrudInterface<Todo>, SearchI
         return given()
                 .spec(reqSpec)
                 .body(entity)
-                .put(new Endpoint(TODO_ENDPOINT).build() + id);
+                .put(new Endpoint(TODO_ENDPOINT + "/").build() + id);
     }
 
     @Override
@@ -40,7 +40,7 @@ public class TodoRequest extends Request implements CrudInterface<Todo>, SearchI
     public Response delete(long id) {
         return given()
                 .spec(reqSpec)
-                .delete(new Endpoint(TODO_ENDPOINT).build() + id);
+                .delete(new Endpoint(TODO_ENDPOINT + "/").build() + id);
     }
 
     @Override

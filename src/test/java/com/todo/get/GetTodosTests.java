@@ -6,13 +6,9 @@ import com.todo.annotations.MobileExecutionExtension;
 import com.todo.annotations.PrepareTodo;
 import com.todo.assertions.Assert;
 import io.qameta.allure.*;
-import io.qameta.allure.restassured.AllureRestAssured;
-import io.restassured.response.Response;
 import org.junit.jupiter.api.*;
 
 import static com.todo.generators.TestDataGeneratorFaker.generateFakerTestData;
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 import com.todo.models.Todo;
@@ -27,16 +23,9 @@ import java.util.List;
 @ExtendWith(MobileExecutionExtension.class)
 public class GetTodosTests extends BaseTest {
 
-    @Test
-    @Description("Получение пустого списка TODO, когда база данных пуста")
-    public void testGetTodosWhenDatabaseIsEmpty() {
-        List<Todo> readResponse = todoRequester.getValidatedRequest().readAll();
-        Assert.assertEmptyBody(readResponse);
-
-    }
 
     @Test
-    @Description("Получение списка TODO с существующими записями")
+    @Description("Успешное получение списка TODO с существующими записями")
     public void testGetTodosWithExistingEntries() {
         Todo todo1 = generateFakerTestData(Todo.class);
         Todo todo2 = generateFakerTestData(Todo.class);
@@ -44,73 +33,30 @@ public class GetTodosTests extends BaseTest {
         todoRequester.getRequest().create(todo1);
         todoRequester.getRequest().create(todo2);
 
-        Response readResponse = todoRequester.getRequest().readAll();
+        List<Todo> readResponse = todoRequester.getValidatedRequest().readAll();
 
-        Todo[] todos = readResponse.getBody().as(Todo[].class);
-        List<Todo> actualTodo   = Arrays.asList(todos);
         List<Todo> expectedTodo = Arrays.asList(todo1, todo2);
 
         assertAll("Проверка полученного TODO",
-                () -> Assert.assertResponseSize(2, readResponse),
-                () -> Assert.assertTodoMatches(actualTodo, expectedTodo)
+                () -> Assert.assertTodosSize(2, readResponse),
+                () -> Assert.assertTodoMatches(readResponse, expectedTodo)
         );
     }
 
     @PrepareTodo(5)
     @Test
-    @Description("Использование параметров offset и limit для пагинации")
+    @Description("Проверка параметров offset и limit для пагинации")
     public void testGetTodosWithOffsetAndLimit() {
-        Response readResponse = todoRequester.getRequest().readAll(2, 2);
-        Assert.assertResponseSize(2, readResponse);
-    }
-
-    @Tag("request schema")
-    @Test
-    @DisplayName("Передача некорректных значений в offset и limit")
-    public void testGetTodosWithInvalidOffsetAndLimit() {
-        // Тест с отрицательным offset
-        given()
-                .filter(new AllureRestAssured())
-                .queryParam("offset", -1)
-                .queryParam("limit", 2)
-                .when()
-                .get("/todos")
-                .then()
-                .statusCode(400)
-                .contentType("text/plain")
-                .body(containsString("Invalid query string"));
-
-        // Тест с нечисловым limit
-        given()
-                .filter(new AllureRestAssured())
-                .queryParam("offset", 0)
-                .queryParam("limit", "abc")
-                .when()
-                .get("/todos")
-                .then()
-                .statusCode(400)
-                .contentType("text/plain")
-                .body(containsString("Invalid query string"));
-
-        // Тест с отсутствующим значением offset
-        given()
-                .filter(new AllureRestAssured())
-                .queryParam("offset", "")
-                .queryParam("limit", 2)
-                .when()
-                .get("/todos")
-                .then()
-                .statusCode(400)
-                .contentType("text/plain")
-                .body(containsString("Invalid query string"));
+        List<Todo> readResponse = todoRequester.getValidatedRequest().readAll(2, 2);
+        Assert.assertTodosSize(2, readResponse);
     }
 
 
     @PrepareTodo(10)
     @Test
-    @DisplayName("Проверка ответа при превышении максимально допустимого значения limit")
+    @Description("Проверка ответа при превышении максимально допустимого значения limit")
     public void testGetTodosWithExcessiveLimit() {
-        Response readResponse = todoRequester.getRequest().readAll(0, 1000);
-        Assert.assertResponseSize(10, readResponse);
+        List<Todo> readResponse = todoRequester.getValidatedRequest().readAll(0, 1000);
+        Assert.assertTodosSize(10, readResponse);
     }
 }

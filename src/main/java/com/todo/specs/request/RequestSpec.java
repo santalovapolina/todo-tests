@@ -27,13 +27,13 @@ public class RequestSpec {
         return baseSpecBuilder().build();
     }
 
+
     public static RequestSpecification authSpec() {
         return baseSpecBuilder()
                 .build()
                 .auth()
                 .preemptive()
                 .basic("admin", "admin");
-
     }
 
     public static RequestSpecification incorrectAuthSpec() {
@@ -42,8 +42,6 @@ public class RequestSpec {
                 .auth()
                 .preemptive()
                 .basic("polins", "12345");
-
     }
-
 
 }

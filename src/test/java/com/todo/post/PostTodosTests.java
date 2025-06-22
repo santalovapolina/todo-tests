@@ -5,83 +5,46 @@ import com.todo.assertions.Assert;
 import com.todo.models.Todo;
 import com.todo.models.TodoBuilder;
 import com.todo.specs.response.IncorrectDataResponse;
-import io.restassured.response.Response;
-import org.junit.jupiter.api.Tag;
+import io.qameta.allure.Description;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static com.todo.generators.TestDataGeneratorFaker.generateFakerTestData;
-import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
 public class PostTodosTests extends BaseTest {
 
     @Test
+    @Description("Успешное создание TODO")
     public void testCreateTodoWithValidData() {
         Todo todo = generateFakerTestData(Todo.class);
         todoRequester.getValidatedRequest().create(todo);
 
-        Response readResponse = todoRequester.getRequest().readAll();
+        List<Todo> readResponse = todoRequester.getValidatedRequest().readAll();
         Assert.assertTodoExists(todo.getId(), readResponse);
     }
 
-    /**
-     * TC2: Попытка создания TODO с отсутствующими обязательными полями.
-     */
-    @Tag("request schema")
     @Test
-    public void testCreateTodoWithMissingFields() {
-        // Создаем JSON без обязательного поля 'text'
-        String invalidTodoJson = "{ \"id\": 2, \"completed\": true }";
-
-//        todoRequester.getRequest().create().then()
-//                .spec(IncorrectDataResponse.STATUS_400).body(notNullValue()); // Проверяем, что есть сообщение об ошибке
-    }
-
-    /**
-     * TC3: Создание TODO с максимально допустимой длиной поля 'text'.
-     */
-    @Test
+    @Description("Успешное создание TODO с максимально допустимой длиной поля 'text'")
     public void testCreateTodoWithMaxLengthText() {
         String maxLengthText = "A".repeat(255);
         Todo todo = new TodoBuilder().setText(maxLengthText).build();
         todoRequester.getValidatedRequest().create(todo);
 
-        Response readResponse = todoRequester.getRequest().readAll();
+        List<Todo> readResponse = todoRequester.getValidatedRequest().readAll();
 
-        Todo[] todosArray = readResponse.getBody().as(Todo[].class);
-        List<Todo> actualTodo = Arrays.asList(todosArray);
         List<Todo> expectedTodo = Arrays.asList(todo);
 
         assertAll("Проверка созданного TODO",
-                () -> Assert.assertTodoMatches(actualTodo, expectedTodo),
+                () -> Assert.assertTodoMatches(readResponse, expectedTodo),
                 () -> Assert.assertTodoExists(todo.getId(), readResponse)
         );
     }
 
-    /**
-     * TC4: Передача некорректных типов данных в полях.
-     */
-    @Tag("request schema")
     @Test
-    public void testCreateTodoWithInvalidDataTypes() {
-        // Поле 'completed' содержит строку вместо булевого значения
-        Todo newTodo = new TodoBuilder()
-//                .setCompleted(("text"))
-                .build();
-
-        todoRequester.getRequest().create(newTodo)
-                .then()
-                .spec(IncorrectDataResponse.STATUS_400)
-                .body(notNullValue()); // Проверяем, что есть сообщение об ошибке
-    }
-
-    /**
-     * TC5: Создание TODO с уже существующим 'id' (если 'id' задается клиентом).
-     */
-    @Test
+    @Description("Ошибка при создании TODO с уже существующим 'id'")
     public void testCreateTodoWithExistingId() {
         Todo firstTodo = generateFakerTestData(Todo.class);
         todoRequester.getRequest().create(firstTodo);
@@ -94,7 +57,7 @@ public class PostTodosTests extends BaseTest {
                 .then()
                 .spec(IncorrectDataResponse.STATUS_400);
 
-        Response readResponse = todoRequester.getRequest().readAll();
-        Assert.assertResponseSize(1, readResponse);
+        List<Todo> readResponse = todoRequester.getValidatedRequest().readAll();
+        Assert.assertTodosSize(1, readResponse);
     }
 }

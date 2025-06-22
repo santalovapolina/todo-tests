@@ -20,23 +20,23 @@ import java.util.Random;
 public class DeleteTodosTests extends BaseTest {
 
     @Test
-    @Description("Успешное удаление существующего TODO с корректной авторизацией")
+    @Description("Авторизованный пользователь может удалить TODO")
     public void testDeleteExistingTodoWithValidAuth() {
         Todo todo = generateFakerTestData(Todo.class);
         todoRequester.getRequest().create(todo);
 
         String deleteResponse = todoRequester.getValidatedRequest().delete(todo.getId());
 
-        List<Todo> readResponse = todoRequester.getValidatedRequest().readAll();
+        List<Todo> actualTodo = todoRequester.getValidatedRequest().readAll();
 
         assertAll("Проверки после удаления TODO",
                 () -> Assert.assertEmptyBody(deleteResponse),
-                () -> Assert.assertTodoNotExist(todo.getId(), readResponse)
+                () -> Assert.assertTodoNotExist(todo.getId(), actualTodo)
         );
     }
 
     @Test
-    @Description("Ошибка удаления TODO без заголовка Authorization")
+    @Description("Нельзя удалить TODO без авторизации")
     public void testDeleteTodoWithoutAuthHeader() {
         Todo todo = generateFakerTestData(Todo.class);
         todoRequester.getRequest().create(todo);
@@ -44,12 +44,12 @@ public class DeleteTodosTests extends BaseTest {
         todoRequester = new TodoRequester(RequestSpec.unauthSpec());
         todoRequester.getRequest().delete(todo.getId()).then().spec(IncorrectDataResponse.STATUS_401);
 
-        List<Todo> readResponse = todoRequester.getValidatedRequest().readAll();
-        Assert.assertTodoExists(todo.getId(), readResponse);
+        List<Todo> actualTodo = todoRequester.getValidatedRequest().readAll();
+        Assert.assertTodoExists(todo.getId(), actualTodo);
     }
 
     @Test
-    @Description("Ошибка удаления TODO с некорректными учетными данными")
+    @Description("Нельзя удалить TODO с невалидными кредами пользователя")
     public void testDeleteTodoWithInvalidAuth() {
         Todo todo = generateFakerTestData(Todo.class);
         todoRequester.getRequest().create(todo);
@@ -57,18 +57,17 @@ public class DeleteTodosTests extends BaseTest {
         todoRequester = new TodoRequester(RequestSpec.incorrectAuthSpec());
         todoRequester.getRequest().delete(todo.getId()).then().spec(IncorrectDataResponse.STATUS_401);
 
-        List<Todo> readResponse = todoRequester.getValidatedRequest().readAll();
-        Assert.assertTodoExists(todo.getId(), readResponse);
+        List<Todo> actualTodo = todoRequester.getValidatedRequest().readAll();
+        Assert.assertTodoExists(todo.getId(), actualTodo);
     }
 
     @Test
-    @Description("Удаление TODO с несуществующим id")
+    @Description("Нельзя удалить несуществующее TODO")
     public void testDeleteNonExistentTodo() {
         var nonExistingId = new Random().nextInt();
         todoRequester.getRequest().delete(nonExistingId).then().spec(IncorrectDataResponse.STATUS_404);
 
-        List<Todo> readResponse = todoRequester.getValidatedRequest().readAll();
-        Assert.assertTodosSize(0, readResponse);
+        List<Todo> actualTodo = todoRequester.getValidatedRequest().readAll();
+        Assert.assertTodosSize(0, actualTodo);
     }
-
 }

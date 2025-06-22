@@ -17,34 +17,33 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 public class PostTodosTests extends BaseTest {
 
     @Test
-    @Description("Успешное создание TODO")
+    @Description("Авторизованный пользователь может создавать TODO")
     public void testCreateTodoWithValidData() {
         Todo todo = generateFakerTestData(Todo.class);
         todoRequester.getValidatedRequest().create(todo);
 
-        List<Todo> readResponse = todoRequester.getValidatedRequest().readAll();
-        Assert.assertTodoExists(todo.getId(), readResponse);
+        List<Todo> actualTodo = todoRequester.getValidatedRequest().readAll();
+        Assert.assertTodoExists(todo.getId(), actualTodo);
     }
 
     @Test
-    @Description("Успешное создание TODO с максимально допустимой длиной поля 'text'")
+    @Description("Максимально допустимая длина поля 'text' составляет 255")
     public void testCreateTodoWithMaxLengthText() {
         String maxLengthText = "A".repeat(255);
         Todo todo = new TodoBuilder().setText(maxLengthText).build();
         todoRequester.getValidatedRequest().create(todo);
 
-        List<Todo> readResponse = todoRequester.getValidatedRequest().readAll();
-
+        List<Todo> actualTodo = todoRequester.getValidatedRequest().readAll();
         List<Todo> expectedTodo = Arrays.asList(todo);
 
         assertAll("Проверка созданного TODO",
-                () -> Assert.assertTodoMatches(readResponse, expectedTodo),
-                () -> Assert.assertTodoExists(todo.getId(), readResponse)
+                () -> Assert.assertTodoMatches(actualTodo, expectedTodo),
+                () -> Assert.assertTodoExists(todo.getId(), actualTodo)
         );
     }
 
     @Test
-    @Description("Ошибка при создании TODO с уже существующим 'id'")
+    @Description("Пользователь не может создать TODO c существующим значением поля 'id'")
     public void testCreateTodoWithExistingId() {
         Todo firstTodo = generateFakerTestData(Todo.class);
         todoRequester.getRequest().create(firstTodo);
@@ -57,7 +56,7 @@ public class PostTodosTests extends BaseTest {
                 .then()
                 .spec(IncorrectDataResponse.STATUS_400);
 
-        List<Todo> readResponse = todoRequester.getValidatedRequest().readAll();
-        Assert.assertTodosSize(1, readResponse);
+        List<Todo> actualTodo = todoRequester.getValidatedRequest().readAll();
+        Assert.assertTodosSize(1, actualTodo);
     }
 }

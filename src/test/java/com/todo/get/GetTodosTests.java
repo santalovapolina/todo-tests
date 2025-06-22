@@ -5,6 +5,7 @@ import com.todo.annotations.DataPreparationExtension;
 import com.todo.annotations.MobileExecutionExtension;
 import com.todo.annotations.PrepareTodo;
 import com.todo.assertions.Assert;
+import com.todo.specs.response.IncorrectDataResponse;
 import io.qameta.allure.*;
 import org.junit.jupiter.api.*;
 
@@ -23,9 +24,8 @@ import java.util.List;
 @ExtendWith(MobileExecutionExtension.class)
 public class GetTodosTests extends BaseTest {
 
-
     @Test
-    @Description("Успешное получение списка TODO с существующими записями")
+    @Description("Авторизованный пользователь может получить список TODO")
     public void testGetTodosWithExistingEntries() {
         Todo todo1 = generateFakerTestData(Todo.class);
         Todo todo2 = generateFakerTestData(Todo.class);
@@ -33,22 +33,27 @@ public class GetTodosTests extends BaseTest {
         todoRequester.getRequest().create(todo1);
         todoRequester.getRequest().create(todo2);
 
-        List<Todo> readResponse = todoRequester.getValidatedRequest().readAll();
-
+        List<Todo> actualTodo = todoRequester.getValidatedRequest().readAll();
         List<Todo> expectedTodo = Arrays.asList(todo1, todo2);
 
         assertAll("Проверка полученного TODO",
-                () -> Assert.assertTodosSize(2, readResponse),
-                () -> Assert.assertTodoMatches(readResponse, expectedTodo)
+                () -> Assert.assertTodosSize(2, actualTodo),
+                () -> Assert.assertTodoMatches(actualTodo, expectedTodo)
         );
     }
 
     @PrepareTodo(5)
     @Test
-    @Description("Проверка параметров offset и limit для пагинации")
+    @Description("Авторизованный пользователь может получать список TODO с учётом параметров offset и limit для пагинации")
     public void testGetTodosWithOffsetAndLimit() {
-        List<Todo> readResponse = todoRequester.getValidatedRequest().readAll(2, 2);
-        Assert.assertTodosSize(2, readResponse);
+        List<Todo> actualTodo = todoRequester.getValidatedRequest().readAll(2, 2);
+        Assert.assertTodosSize(2, actualTodo);
+    }
+
+    @Test
+    @Description("Проверка некорректных значений параметров offset и limit")
+    public void testGetTodosWithInvalidOffsetAndLimit() {
+        todoRequester.getRequest().readAll(-1,-2).then().spec(IncorrectDataResponse.STATUS_400);
     }
 
 
@@ -56,7 +61,7 @@ public class GetTodosTests extends BaseTest {
     @Test
     @Description("Проверка ответа при превышении максимально допустимого значения limit")
     public void testGetTodosWithExcessiveLimit() {
-        List<Todo> readResponse = todoRequester.getValidatedRequest().readAll(0, 1000);
-        Assert.assertTodosSize(10, readResponse);
+        List<Todo> actualTodo = todoRequester.getValidatedRequest().readAll(1, 1000);
+        Assert.assertTodosSize(10, actualTodo);
     }
 }

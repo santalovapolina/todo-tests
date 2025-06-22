@@ -21,11 +21,9 @@ public class DeleteTodosTests extends BaseTest {
      */
     @Test
     public void testDeleteExistingTodoWithValidAuth() {
-        // Создаем TODO для удаления
         Todo todo = generateFakerTestData(Todo.class);
         todoRequester.getRequest().create(todo);
 
-        // Отправляем DELETE запрос с корректной авторизацией
         String deleteResponse = todoRequester.getValidatedRequest().delete(todo.getId());
 
         Response readResponse = todoRequester.getRequest().readAll();
@@ -41,14 +39,11 @@ public class DeleteTodosTests extends BaseTest {
      */
     @Test
     public void testDeleteTodoWithoutAuthHeader() {
-        // Создаем TODO для удаления
         Todo todo = generateFakerTestData(Todo.class);
         todoRequester.getRequest().create(todo);
 
         todoRequester = new TodoRequester(RequestSpec.unauthSpec());
-
-        // Отправляем DELETE запрос без заголовка Authorization
-        todoRequester.getRequest().delete(todo.getId()).then().spec(new IncorrectDataResponse().checkStatus401());
+        todoRequester.getRequest().delete(todo.getId()).then().spec(IncorrectDataResponse.STATUS_401);
 
         Response readResponse = todoRequester.getRequest().readAll();
         Assert.assertTodoExists(todo.getId(), readResponse);
@@ -60,13 +55,11 @@ public class DeleteTodosTests extends BaseTest {
      */
     @Test
     public void testDeleteTodoWithInvalidAuth() {
-        // Создаем TODO для удаления
         Todo todo = generateFakerTestData(Todo.class);
         todoRequester.getRequest().create(todo);
 
         todoRequester = new TodoRequester(RequestSpec.incorrectAuthSpec());
-        // Отправляем DELETE запрос с некорректной авторизацией
-        todoRequester.getRequest().delete(todo.getId()).then().spec(new IncorrectDataResponse().checkStatus401());
+        todoRequester.getRequest().delete(todo.getId()).then().spec(IncorrectDataResponse.STATUS_401);
 
         Response readResponse = todoRequester.getRequest().readAll();
         Assert.assertTodoExists(todo.getId(), readResponse);
@@ -78,10 +71,8 @@ public class DeleteTodosTests extends BaseTest {
      */
     @Test
     public void testDeleteNonExistentTodo() {
-        // Отправляем DELETE запрос для несуществующего TODO с корректной авторизацией
-        todoRequester.getRequest().delete(999).then().spec(new IncorrectDataResponse().checkStatus404());
+        todoRequester.getRequest().delete(999).then().spec(IncorrectDataResponse.STATUS_404);
 
-        // Проверить, что список TODO не изменился
         Response readResponse = todoRequester.getRequest().readAll();
         Assert.assertResponseSize(0, readResponse);
     }
@@ -93,8 +84,7 @@ public class DeleteTodosTests extends BaseTest {
     @Test
     public void testDeleteTodoWithInvalidIdFormat() {
         // Отправляем DELETE запрос с некорректным id
-//        todoRequester.getRequest().delete("1222222").then().spec(new IncorrectDataResponse().checkStatus404());
-
+//        todoRequester.getRequest().delete("1222222").then().spec(IncorrectDataResponse.STATUS_404);
 
 //        given()
 //                .filter(new AllureRestAssured())

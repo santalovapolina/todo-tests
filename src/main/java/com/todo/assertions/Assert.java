@@ -47,7 +47,7 @@ public class Assert {
         assertThat(response, empty());
     }
 
-    @Step("Проверка что размерности тела ответа")
+    @Step("Проверка размерности списка TODO")
     public static void assertResponseSize(int expectedSize, Response response) {
         List<Todo> todos = response
                 .jsonPath()

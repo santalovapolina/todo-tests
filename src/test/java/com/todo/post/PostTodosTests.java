@@ -20,12 +20,9 @@ public class PostTodosTests extends BaseTest {
 
     @Test
     public void testCreateTodoWithValidData() {
-        // Создаем TODO
         Todo todo = generateFakerTestData(Todo.class);
-
         todoRequester.getValidatedRequest().create(todo);
 
-        //Проверяем что todo есть в списке
         Response readResponse = todoRequester.getRequest().readAll();
         Assert.assertTodoExists(todo.getId(), readResponse);
     }
@@ -40,7 +37,7 @@ public class PostTodosTests extends BaseTest {
         String invalidTodoJson = "{ \"id\": 2, \"completed\": true }";
 
 //        todoRequester.getRequest().create().then()
-//                .spec(new IncorrectDataResponse().checkStatus400()).body(notNullValue()); // Проверяем, что есть сообщение об ошибке
+//                .spec(IncorrectDataResponse.STATUS_400).body(notNullValue()); // Проверяем, что есть сообщение об ошибке
     }
 
     /**
@@ -48,23 +45,19 @@ public class PostTodosTests extends BaseTest {
      */
     @Test
     public void testCreateTodoWithMaxLengthText() {
-        // Предполагаем, что максимальная длина поля 'text' составляет 255 символов
         String maxLengthText = "A".repeat(255);
         Todo todo = new TodoBuilder().setText(maxLengthText).build();
-
-        // Отправляем POST запрос для создания нового TODO
         todoRequester.getValidatedRequest().create(todo);
 
-        // Проверяем, что TODO было успешно создано
         Response readResponse = todoRequester.getRequest().readAll();
 
         Todo[] todosArray = readResponse.getBody().as(Todo[].class);
-        List<Todo> actualTodo   = Arrays.asList(todosArray);
+        List<Todo> actualTodo = Arrays.asList(todosArray);
         List<Todo> expectedTodo = Arrays.asList(todo);
 
         assertAll("Проверка созданного TODO",
                 () -> Assert.assertTodoMatches(actualTodo, expectedTodo),
-                () ->  Assert.assertTodoExists(todo.getId(), readResponse)
+                () -> Assert.assertTodoExists(todo.getId(), readResponse)
         );
     }
 
@@ -81,7 +74,7 @@ public class PostTodosTests extends BaseTest {
 
         todoRequester.getRequest().create(newTodo)
                 .then()
-                .spec(new IncorrectDataResponse().checkStatus400())
+                .spec(IncorrectDataResponse.STATUS_400)
                 .body(notNullValue()); // Проверяем, что есть сообщение об ошибке
     }
 
@@ -90,17 +83,18 @@ public class PostTodosTests extends BaseTest {
      */
     @Test
     public void testCreateTodoWithExistingId() {
-        // Сначала создаем TODO
         Todo firstTodo = generateFakerTestData(Todo.class);
         todoRequester.getRequest().create(firstTodo);
 
-        // Пытаемся создать другую TODO перезаписывая id
         Todo duplicateTodo = generateFakerTestData(Todo.class);
         duplicateTodo.setId(firstTodo.getId());
 
         todoRequester.getRequest()
                 .create(duplicateTodo)
                 .then()
-                .spec(new IncorrectDataResponse().checkStatus400());
+                .spec(IncorrectDataResponse.STATUS_400);
+
+        Response readResponse = todoRequester.getRequest().readAll();
+        Assert.assertResponseSize(1, readResponse);
     }
 }

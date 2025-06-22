@@ -30,7 +30,6 @@ public class GetTodosTests extends BaseTest {
     @Test
     @Description("Получение пустого списка TODO, когда база данных пуста")
     public void testGetTodosWhenDatabaseIsEmpty() {
-
         List<Todo> readResponse = todoRequester.getValidatedRequest().readAll();
         Assert.assertEmptyBody(readResponse);
 
@@ -39,7 +38,6 @@ public class GetTodosTests extends BaseTest {
     @Test
     @Description("Получение списка TODO с существующими записями")
     public void testGetTodosWithExistingEntries() {
-        // Предварительно создать несколько TODO
         Todo todo1 = generateFakerTestData(Todo.class);
         Todo todo2 = generateFakerTestData(Todo.class);
 
@@ -112,10 +110,7 @@ public class GetTodosTests extends BaseTest {
     @Test
     @DisplayName("Проверка ответа при превышении максимально допустимого значения limit")
     public void testGetTodosWithExcessiveLimit() {
-
         Response readResponse = todoRequester.getRequest().readAll(0, 1000);
-
-       // Проверяем, что вернулось 10 задач
         Assert.assertResponseSize(10, readResponse);
     }
 }
